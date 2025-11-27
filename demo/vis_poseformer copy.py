@@ -161,9 +161,6 @@ def get_pose3D(video_path, output_dir):
     cap = cv2.VideoCapture(video_path) # 视频读取 ：： 打开视频文件 → 连接解码器 → 创建资源句柄
     video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) # 帧数
 
-    # 3D 数据储存
-    np_3d_pose = []
-
     # 3|每一帧进行处理
     print('\nGenerating 3D pose...')
     for i in tqdm(range(video_length)): # tqdm 可视化进度条
@@ -215,10 +212,10 @@ def get_pose3D(video_path, output_dir):
         post_out = output_3D[0, 0].cpu().detach().numpy()
         
         # ---------------
-        # TODO: 将数据储存
+        # TODO: 将数据储存为c3d格式
         # print(f'post_out：{i}-{post_out.shape}')
-        # np.savez(f'./demo/output/kunkun/output_3D/pose_out{i}.npz', poses_3d=post_out)
-        np_3d_pose.append(post_out)
+        np.savez(f'./demo/output/kunkun/output_3D/pose_out{i}.npz', poses_3d=post_out)
+        
         # ---------------
 
         rot =  [0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]
@@ -248,7 +245,7 @@ def get_pose3D(video_path, output_dir):
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         
     print('Generating 3D pose successful!')
-    np.savez(f'./demo/output/kunkun/output_3D/pose_3d.npz', poses_3d=np_3d_pose)
+  
 
     #  all
     image_dir = 'results/' 
@@ -305,11 +302,11 @@ if __name__ == "__main__":
     # 生成结果
     get_pose2D(video_path, output_dir) # 生成二维数据
     get_pose3D(video_path, output_dir) # 生成三维数据
-    img2video(video_path, output_dir) # 将图片合成视频
+    # img2video(video_path, output_dir) # 将图片合成视频
     print('Generating demo successful!')
 
 
-# py3.12 demo/vis_poseformer.py --video C-TJ1-try.mp4
+# py3.12 demo/vis_poseformer.py --video kunkun.mp4
 
 
 

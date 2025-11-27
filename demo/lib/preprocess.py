@@ -7,6 +7,7 @@ coco_order = [0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 spple_keypoints = [10, 8, 0, 7]
 
 
+# TODO: 
 def coco_h36m(keypoints):
     temporal = keypoints.shape[0]
     keypoints_h36m = np.zeros_like(keypoints, dtype=np.float32)
@@ -37,6 +38,7 @@ def coco_h36m(keypoints):
     return keypoints_h36m, valid_frames
 
 
+# TODO: 
 def h36m_coco_format(keypoints, scores):
     assert len(keypoints.shape) == 4 and len(scores.shape) == 3
 
@@ -69,6 +71,7 @@ def h36m_coco_format(keypoints, scores):
     return h36m_kpts, h36m_scores, valid_frames
 
 
+# TODO: 生成 npz 文件：
 def revise_kpts(h36m_kpts, h36m_scores, valid_frames):
 
     new_h36m_kpts = np.zeros_like(h36m_kpts)

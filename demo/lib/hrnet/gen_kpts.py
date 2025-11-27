@@ -30,31 +30,25 @@ from lib.yolov3.human_detector import yolo_human_det as yolo_det
 from lib.sort.sort import Sort
 
 
+# TODO: cmd 参数提取；
 def parse_args():
     parser = argparse.ArgumentParser(description='Train keypoints network')
     # general
-    parser.add_argument('--cfg', type=str, default=cfg_dir + 'w48_384x288_adam_lr1e-3.yaml',
-                        help='experiment configure file name')
-    parser.add_argument('opts', nargs=argparse.REMAINDER, default=None,
-                        help="Modify config options using the command-line")
-    parser.add_argument('--modelDir', type=str, default=model_dir + 'pose_hrnet_w48_384x288.pth',
-                        help='The model directory')
-    parser.add_argument('--det-dim', type=int, default=416,
-                        help='The input dimension of the detected image')
-    parser.add_argument('--thred-score', type=float, default=0.30,
-                        help='The threshold of object Confidence')
-    parser.add_argument('-a', '--animation', action='store_true',
-                        help='output animation')
-    parser.add_argument('-np', '--num-person', type=int, default=1,
-                        help='The maximum number of estimated poses')
-    parser.add_argument("-v", "--video", type=str, default='camera',
-                        help="input video file name")
+    parser.add_argument('--cfg', type=str, default=cfg_dir + 'w48_384x288_adam_lr1e-3.yaml',help='experiment configure file name')
+    parser.add_argument('opts', nargs=argparse.REMAINDER, default=None,help="Modify config options using the command-line")
+    parser.add_argument('--modelDir', type=str, default=model_dir + 'pose_hrnet_w48_384x288.pth',help='The model directory')
+    parser.add_argument('--det-dim', type=int, default=416,help='The input dimension of the detected image')
+    parser.add_argument('--thred-score', type=float, default=0.30,help='The threshold of object Confidence')
+    parser.add_argument('-a', '--animation', action='store_true',help='output animation')
+    parser.add_argument('-np', '--num-person', type=int, default=1,help='The maximum number of estimated poses')
+    parser.add_argument("-v", "--video", type=str, default='camera',help="input video file name")
     parser.add_argument('--gpu', type=str, default='0', help='input video')
     args = parser.parse_args()
 
     return args
 
 
+# TODO: 
 def reset_config(args):
     update_config(cfg, args)
 
@@ -64,7 +58,7 @@ def reset_config(args):
     torch.backends.cudnn.enabled = cfg.CUDNN.ENABLED
 
 
-# load model
+# TODO: load model
 def model_load(config):
     model = pose_hrnet.get_pose_net(config, is_train=False)
     if torch.cuda.is_available():
@@ -84,7 +78,13 @@ def model_load(config):
     return model
 
 
+# TODO: 
 def gen_video_kpts(video, det_dim=416, num_peroson=1, gen_output=False):
+    # video         :: 视频地址
+    # det_dim       :: 
+    # num_peroson   :: 最大识别人数
+    # gen_output    :: 是否生成输出
+    
     # Updating configuration
     args = parse_args()
     reset_config(args)
@@ -92,12 +92,14 @@ def gen_video_kpts(video, det_dim=416, num_peroson=1, gen_output=False):
     cap = cv2.VideoCapture(video)
 
     # Loading detector and pose model, initialize sort for track
-    human_model = yolo_model(inp_dim=det_dim)
-    pose_model = model_load(cfg)
-    people_sort = Sort(min_hits=0)
+    human_model = yolo_model(inp_dim=det_dim) # 载入模型
+    pose_model = model_load(cfg) # 
+    people_sort = Sort(min_hits=0) # 
 
-    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # 载入视频
+    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) # 
 
+    # 
     kpts_result = []
     scores_result = []
     for ii in tqdm(range(video_length)):
@@ -160,7 +162,7 @@ def gen_video_kpts(video, det_dim=416, num_peroson=1, gen_output=False):
     keypoints = np.array(kpts_result)
     scores = np.array(scores_result)
 
-    keypoints = keypoints.transpose(1, 0, 2, 3)  # (T, M, N, 2) --> (M, T, N, 2)
-    scores = scores.transpose(1, 0, 2)  # (T, M, N) --> (M, T, N)
+    keypoints = keypoints.transpose(1, 0, 2, 3)  # -> NDArray (T, M, N, 2) --> (M, T, N, 2)
+    scores = scores.transpose(1, 0, 2)  # -> NDArray  (T, M, N) --> (M, T, N)
 
     return keypoints, scores
