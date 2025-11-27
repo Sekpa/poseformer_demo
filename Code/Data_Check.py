@@ -4,10 +4,10 @@ import numpy as np
 
 npz_2d_path = r"./demo/output/kunkun/input_2D/keypoints.npz"
 
-npz_3d_path = lambda i: f"./demo/output/kunkun/output_3D/pose_out{i}.npz"
+npz_3d_path = r'demo/output/C-TJ1-try/pose_3d.npz'
 
 # data = np.load(npz_2d_path)
-data = np.load(npz_3d_path(1))
+data = np.load(npz_3d_path)
 print(f"列出所有数组名：{data.files}\n")
 
 # keypoints = data['reconstruction']

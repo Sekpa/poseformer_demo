@@ -211,13 +211,6 @@ def get_pose3D(video_path, output_dir):
         output_3D[:, :, 0, :] = 0
         post_out = output_3D[0, 0].cpu().detach().numpy()
         
-        # ---------------
-        # TODO: 将数据储存为c3d格式
-        # print(f'post_out：{i}-{post_out.shape}')
-        np.savez(f'./demo/output/kunkun/output_3D/pose_out{i}.npz', poses_3d=post_out)
-        
-        # ---------------
-
         rot =  [0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]
         rot = np.array(rot, dtype='float32')
         post_out = camera_to_world(post_out, R=rot, t=0) # 
@@ -302,11 +295,7 @@ if __name__ == "__main__":
     # 生成结果
     get_pose2D(video_path, output_dir) # 生成二维数据
     get_pose3D(video_path, output_dir) # 生成三维数据
-    # img2video(video_path, output_dir) # 将图片合成视频
+    img2video(video_path, output_dir) # 将图片合成视频
     print('Generating demo successful!')
-
-
-# py3.12 demo/vis_poseformer.py --video kunkun.mp4
-
 
 

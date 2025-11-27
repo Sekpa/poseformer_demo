@@ -86,29 +86,29 @@ def show3Dpose(vals, ax):
 
 
 # TODO: 
-def get_pose2D(video_path, output_dir):
+def get_pose2D(cap, output_dir):
     # 1|视频长宽参数
-    cap = cv2.VideoCapture(video_path)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     # 2|TODO: 得到特征点；
-    print('\nGenerating 2D pose...')
-    keypoints, scores = hrnet_pose(video_path, det_dim=416, num_peroson=1, gen_output=True) # @ 核心模型 -> tuple[NDArray, NDArray]
-    keypoints, scores, valid_frames = h36m_coco_format(keypoints, scores) # 结合模型 -> tuple[NDArray[floating[_32Bit]], NDArray[floating[_32Bit]], list]
-    re_kpts = revise_kpts(keypoints, scores, valid_frames) # 
-    print('Generating 2D pose successful!')
+    print('\n#get_pose2D|1-Generating',end="")
+    keypoints, scores = hrnet_pose(cap, det_dim=416, num_peroson=1, gen_output=True)
+        # @ 核心模型 -> tuple[NDArray, NDArray]
+    keypoints, scores, valid_frames = h36m_coco_format(keypoints, scores)
+        # 结合人体模型 -> tuple[NDArray[floating[_32Bit]], NDArray[floating[_32Bit]], list]
+    # re_kpts = revise_kpts(keypoints, scores, valid_frames) 
+        # 不明意义
+    print('|2-Done!',end="\n")
     
-    # 3|生成 npz 文件
-    output_dir += 'input_2D/'
-    os.makedirs(output_dir, exist_ok=True)
-
-    output_npz = output_dir + 'keypoints.npz'
+    # 3|生成 npz 文件 并返回 Array 数据；
+    output_npz = output_dir + 'pose_2d.npz'
     np.savez_compressed(output_npz, reconstruction=keypoints)
+    
+    return keypoints
 
 # TODO: 
-def img2video(video_path, output_dir):
-    cap = cv2.VideoCapture(video_path)
+def img2video(cap, output_dir):
     fps = int(cap.get(cv2.CAP_PROP_FPS)) + 5
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -133,8 +133,9 @@ def showimage(ax, img):
     ax.imshow(img)
 
 # TODO: 2D -> 3D lifting
-def get_pose3D(video_path, output_dir):
+def get_pose3D(cap, keypoints, output_dir):
     # 1|模型载入
+    print('\n#get_pose3D|1-Loading model',end="")
     args, _ = argparse.ArgumentParser().parse_known_args()
     args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 9
     args.pad = (args.frames - 1) // 2
@@ -156,16 +157,13 @@ def get_pose3D(video_path, output_dir):
     model.eval() # 评估模式
 
     # 2|2D数据读入
-    keypoints = np.load(output_dir + 'input_2D/keypoints.npz', allow_pickle=True)['reconstruction']
-
-    cap = cv2.VideoCapture(video_path) # 视频读取 ：： 打开视频文件 → 连接解码器 → 创建资源句柄
+    print('|2-Loading data',end="")
     video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) # 帧数
-
-    # 3D 数据储存
-    np_3d_pose = []
+    np_3d_pose = np.zeros((video_length, 17, 3)) # 3D 坐标储存位置
 
     # 3|每一帧进行处理
-    print('\nGenerating 3D pose...')
+    print('|3-Generating',end="\n")
+
     for i in tqdm(range(video_length)): # tqdm 可视化进度条
         ret, img = cap.read() # 逐帧抽取
         img_size = img.shape # 图片尺寸
@@ -199,7 +197,7 @@ def get_pose3D(video_path, output_dir):
 
         input_2D = torch.from_numpy(input_2D.astype('float32')).cuda()
 
-        N = input_2D.size(0)
+        # N = input_2D.size(0)
 
         ## estimation 评估？
         output_3D_non_flip = model(input_2D[:, 0])
@@ -215,10 +213,7 @@ def get_pose3D(video_path, output_dir):
         post_out = output_3D[0, 0].cpu().detach().numpy()
         
         # ---------------
-        # TODO: 将数据储存
-        # print(f'post_out：{i}-{post_out.shape}')
-        # np.savez(f'./demo/output/kunkun/output_3D/pose_out{i}.npz', poses_3d=post_out)
-        np_3d_pose.append(post_out)
+        np_3d_pose[i] = post_out
         # ---------------
 
         rot =  [0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]
@@ -246,9 +241,10 @@ def get_pose3D(video_path, output_dir):
         output_dir_3D = output_dir +'pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+        plt.close()
         
-    print('Generating 3D pose successful!')
-    np.savez(f'./demo/output/kunkun/output_3D/pose_3d.npz', poses_3d=np_3d_pose)
+    np.savez(f'{output_dir}pose_3d.npz', poses_3d=np_3d_pose)
+    print('|4-Done!')
 
     #  all
     image_dir = 'results/' 
@@ -285,31 +281,52 @@ def get_pose3D(video_path, output_dir):
 
 
 # TODO: MAIN fun
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser() # 
-    parser.add_argument('--video', type=str, default='sample_video.mp4', help='input video') # 视频路径
-    parser.add_argument('--gpu', type=str, default='0', help='input video') # @
-    args = parser.parse_args() # 处理传入参数
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser() # 
+#     parser.add_argument('--video', type=str, default='sample_video.mp4', help='input video') # 视频路径
+#     parser.add_argument('--gpu', type=str, default='0', help='input video') # @
+#     args = parser.parse_args() # 处理传入参数
 
-    # gpu 处理：
-    try: 
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    except Exception as e:
-        print(f"Worry as {e}")
+#     # gpu 处理：
+#     try: 
+#         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+#     except Exception as e:
+#         print(f"Worry as {e}")
 
-    # 路径处理
-    video_path = './demo/video/' + args.video
-    video_name = video_path.split('/')[-1].split('.')[0]
-    output_dir = './demo/output/' + video_name + '/'
+#     # 路径处理
+#     video_path = './demo/video/' + args.video
+#     video_name = video_path.split('/')[-1].split('.')[0]
+#     output_dir = './demo/output/' + video_name + '/'
 
-    # 生成结果
-    get_pose2D(video_path, output_dir) # 生成二维数据
-    get_pose3D(video_path, output_dir) # 生成三维数据
-    img2video(video_path, output_dir) # 将图片合成视频
-    print('Generating demo successful!')
+#     cap = cv2.VideoCapture(video_path) # 视频读取 ：： 打开视频文件 → 连接解码器 → 创建资源句柄
 
+#     # 生成结果
+#     keypoints = get_pose2D(cap, output_dir) # 生成二维数据
+#     get_pose3D(cap, keypoints, output_dir) # 生成三维数据
+#     img2video(cap, output_dir) # 将图片合成视频
+#     print('Generating demo successful!')
 
 # py3.12 demo/vis_poseformer.py --video C-TJ1-try.mp4
 
+# TODO:
 
+try: 
+    os.environ["CUDA_VISIBLE_DEVICES"] = 0
+except Exception as e:
+    print(f"Worry as {e}")
+
+video_name = 'C-TJ1-try'
+video_path = './demo/video/' + video_name + '.mp4' 
+output_dir = './demo/output/' + video_name + '/'
+
+cap = cv2.VideoCapture(video_path)
+
+# keypoints = get_pose2D(cap, output_dir) # 生成二维数据
+
+keypoints = np.load('./demo/output/C-TJ1-try/pose_2d.npz')['reconstruction']
+
+get_pose3D(cap, keypoints, output_dir) # 生成三维数据
+img2video(cap, output_dir) # 将图片合成视频
+
+print('Generating demo successful!')
 

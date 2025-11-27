@@ -79,7 +79,7 @@ def model_load(config):
 
 
 # TODO: 
-def gen_video_kpts(video, det_dim=416, num_peroson=1, gen_output=False):
+def gen_video_kpts(cap, det_dim=416, num_peroson=1, gen_output=False):
     # video         :: 视频地址
     # det_dim       :: 
     # num_peroson   :: 最大识别人数
@@ -89,7 +89,6 @@ def gen_video_kpts(video, det_dim=416, num_peroson=1, gen_output=False):
     args = parse_args()
     reset_config(args)
 
-    cap = cv2.VideoCapture(video)
 
     # Loading detector and pose model, initialize sort for track
     human_model = yolo_model(inp_dim=det_dim) # 载入模型
