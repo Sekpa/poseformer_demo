@@ -88,10 +88,17 @@ def show3Dpose(vals, ax):
 # TODO: 
 def get_pose2D(cap, output_dir):
     # 1|视频长宽参数
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    # width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    # height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     # 2|TODO: 得到特征点；
+    ## 检测是否任务已完成
+    output_npz = output_dir + 'pose_2d.npz'
+    if(os.path.exists(output_npz)):
+        print('#get_pose2D|File Existed.',end="\n")
+        return np.load(output_npz)['reconstruction']
+    
+    ## 未处理则重新生成；
     print('\n#get_pose2D|1-Generating',end="")
     keypoints, scores = hrnet_pose(cap, det_dim=416, num_peroson=1, gen_output=True)
         # @ 核心模型 -> tuple[NDArray, NDArray]
@@ -102,7 +109,7 @@ def get_pose2D(cap, output_dir):
     print('|2-Done!',end="\n")
     
     # 3|生成 npz 文件 并返回 Array 数据；
-    output_npz = output_dir + 'pose_2d.npz'
+    
     np.savez_compressed(output_npz, reconstruction=keypoints)
     
     return keypoints
@@ -247,7 +254,7 @@ def get_pose3D(cap, keypoints, output_dir):
     print('|4-Done!')
 
     #  all
-    image_dir = 'results/' 
+    # image_dir = 'results/' 
     image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))
     image_3d_dir = sorted(glob.glob(os.path.join(output_dir_3D, '*.png')))
 
@@ -279,7 +286,6 @@ def get_pose3D(cap, keypoints, output_dir):
         os.makedirs(output_dir_pose, exist_ok=True)
         plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
 
-
 # TODO: MAIN fun
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser() # 
@@ -308,7 +314,7 @@ def get_pose3D(cap, keypoints, output_dir):
 
 # py3.12 demo/vis_poseformer.py --video C-TJ1-try.mp4
 
-# TODO:
+# TODO: RUN the code here
 
 try: 
     os.environ["CUDA_VISIBLE_DEVICES"] = 0
@@ -321,10 +327,7 @@ output_dir = './demo/output/' + video_name + '/'
 
 cap = cv2.VideoCapture(video_path)
 
-# keypoints = get_pose2D(cap, output_dir) # 生成二维数据
-
-keypoints = np.load('./demo/output/C-TJ1-try/pose_2d.npz')['reconstruction']
-
+keypoints = get_pose2D(cap, output_dir) # 生成二维数据
 get_pose3D(cap, keypoints, output_dir) # 生成三维数据
 img2video(cap, output_dir) # 将图片合成视频
 
