@@ -84,7 +84,6 @@ def show3Dpose(vals, ax):
     ax.tick_params('y', labelleft = False)
     ax.tick_params('z', labelleft = False)
 
-
 # TODO: 
 def get_pose2D(cap, output_dir):
     # 1|视频长宽参数
@@ -173,6 +172,8 @@ def get_pose3D(cap, keypoints, output_dir):
 
     for i in tqdm(range(video_length)): # tqdm 可视化进度条
         ret, img = cap.read() # 逐帧抽取
+        while not ret:
+            ret, img = cap.read() # 防止读到空帧
         img_size = img.shape # 图片尺寸
 
         ## input frames 设定处理的开始和结束帧数
@@ -316,12 +317,8 @@ def get_pose3D(cap, keypoints, output_dir):
 
 # TODO: RUN the code here
 
-try: 
-    os.environ["CUDA_VISIBLE_DEVICES"] = 0
-except Exception as e:
-    print(f"Worry as {e}")
-
 video_name = 'C-TJ1-try'
+video_name = 'try'
 video_path = './demo/video/' + video_name + '.mp4' 
 output_dir = './demo/output/' + video_name + '/'
 
