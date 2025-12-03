@@ -114,7 +114,7 @@ def get_pose2D(cap, output_dir):
     return keypoints
 
 # TODO: 
-def img2video(cap, output_dir):
+def img2video(cap, video_name, output_dir):
     fps = int(cap.get(cv2.CAP_PROP_FPS)) + 5
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -172,8 +172,8 @@ def get_pose3D(cap, keypoints, output_dir):
 
     for i in tqdm(range(video_length)): # tqdm 可视化进度条
         ret, img = cap.read() # 逐帧抽取
-        while not ret:
-            ret, img = cap.read() # 防止读到空帧
+        # while not ret:
+        #     ret, img = cap.read() # 防止读到空帧
         img_size = img.shape # 图片尺寸
 
         ## input frames 设定处理的开始和结束帧数
@@ -286,6 +286,7 @@ def get_pose3D(cap, keypoints, output_dir):
         output_dir_pose = output_dir +'pose/'
         os.makedirs(output_dir_pose, exist_ok=True)
         plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
+        plt.close()
 
 # TODO: MAIN fun
 # if __name__ == "__main__":
@@ -316,17 +317,19 @@ def get_pose3D(cap, keypoints, output_dir):
 # py3.12 demo/vis_poseformer.py --video C-TJ1-try.mp4
 
 # TODO: RUN the code here
+def RUN():
+    video_name = 'C-TJ1-try'
+    video_name = 'try'
+    video_name = 'WBQ'
+    video_path = './demo/video/' + video_name + '.mp4' 
+    output_dir = './demo/output/' + video_name + '/'
 
-video_name = 'C-TJ1-try'
-video_name = 'try'
-video_path = './demo/video/' + video_name + '.mp4' 
-output_dir = './demo/output/' + video_name + '/'
+    cap = cv2.VideoCapture(video_path)
 
-cap = cv2.VideoCapture(video_path)
+    keypoints = get_pose2D(cap, output_dir) # 生成二维数据
+    get_pose3D(cap, keypoints, output_dir) # 生成三维数据
+    img2video(cap, video_name, output_dir) # 将图片合成视频
 
-keypoints = get_pose2D(cap, output_dir) # 生成二维数据
-get_pose3D(cap, keypoints, output_dir) # 生成三维数据
-img2video(cap, output_dir) # 将图片合成视频
+    print('Generating demo successful!')
 
-print('Generating demo successful!')
-
+RUN()
